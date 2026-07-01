@@ -24,11 +24,11 @@ export default function Navbar() {
   return (
     <nav className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 20px', borderRadius: '0', borderTop: 'none', borderLeft: 'none', borderRight: 'none', position: 'sticky', top: 0, zIndex: 100 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: 'var(--primary-color)', fontSize: '24px', fontWeight: 'bold' }}>
+        <Link to="/" className="navbar-brand">
           STUDENT BAZAAR
         </Link>
       </div>
-      <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+      <div className="navbar-links">
         {user && <Link to="/create-listing" className="btn btn-primary" style={{ textDecoration: 'none' }}>Sell</Link>}
         {user && <Link to="/chat" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>Chat</Link>}
         {user && <Link to="/profile" style={{ textDecoration: 'none', color: 'var(--text-main)' }}>Profile</Link>}

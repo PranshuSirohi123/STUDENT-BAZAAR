@@ -142,3 +142,28 @@ p {
   padding-top: 2rem;
   padding-bottom: 4rem; /* For mobile spacing */
 }
+
+/* Responsive Navbar Styles */
+.navbar-brand {
+  text-decoration: none;
+  color: var(--primary-color);
+  font-size: 24px;
+  font-weight: bold;
+  transition: var(--transition);
+}
+
+.navbar-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+@media (max-width: 480px) {
+  .navbar-brand {
+    font-size: 16px; /* Smaller brand title on mobile */
+  }
+  .navbar-links {
+    gap: 8px; /* Tighter button spacing on mobile */
+  }
+}
+
