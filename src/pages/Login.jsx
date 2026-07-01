@@ -1,76 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../firebase';
-import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase';
+import { auth, db } from '../firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // This effect runs when the page loads. It checks if the URL contains a sign-in link.
+  // Redirect to home if already logged in on mount
   useEffect(() => {
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      let savedEmail = window.localStorage.getItem('emailForSignIn');
-      
-      if (!savedEmail) {
-        // If the user opened the link on a different device or browser, we need them to re-enter their email
-        savedEmail = window.prompt('Please confirm your email to complete sign-in:');
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        navigate('/');
       }
-      
-      if (savedEmail) {
-        setLoading(true);
-        setMessage('Verifying your login link...');
-        
-        signInWithEmailLink(auth, savedEmail, window.location.href)
-          .then(async (result) => {
-            // Clear email from storage.
-            window.localStorage.removeItem('emailForSignIn');
-            
-            // Initialize user doc in Firestore if it doesn't exist
-            const userRef = doc(db, 'users', result.user.uid);
-            const userSnap = await getDoc(userRef);
-            if (!userSnap.exists()) {
-              await setDoc(userRef, {
-                email: result.user.email,
-                createdAt: serverTimestamp(),
-                photoURL: '',
-                backgroundUrl: '',
-                age: ''
-              });
-            }
-
-            // Redirect to home page
-            navigate('/');
-          })
-          .catch((error) => {
-            setLoading(false);
-            setMessage('Error signing in with link: ' + error.message);
-          });
-      }
-    }
+    });
+    return () => unsubscribe();
   }, [navigate]);
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
-    
-    const actionCodeSettings = {
-      // URL you want to redirect back to.
-      url: window.location.origin + '/login',
-      handleCodeInApp: true,
-    };
 
     try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem('emailForSignIn', email);
-      setMessage('A sign-in link has been sent to your email! Please check your inbox and click the link.');
+      if (isSignUp) {
+        // 1. Create user with Email & Password
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // 2. Set public display name in Firebase Auth profile
+        await updateProfile(result.user, {
+          displayName: displayName || "Student"
+        });
+
+        // 3. Initialize user document in Firestore
+        const userRef = doc(db, 'users', result.user.uid);
+        await setDoc(userRef, {
+          email: result.user.email,
+          createdAt: serverTimestamp(),
+          photoURL: '',
+          backgroundUrl: '',
+          age: ''
+        });
+
+        setMessage("Account created successfully!");
+        navigate('/');
+      } else {
+        // Log in user with Email & Password
+        await signInWithEmailAndPassword(auth, email, password);
+        navigate('/');
+      }
     } catch (error) {
-      setMessage('Error: ' + error.message);
+      console.error("Auth error:", error);
+      let errorMsg = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        errorMsg = "This email is already registered. Please log in instead.";
+      } else if (error.code === 'auth/invalid-credential') {
+        errorMsg = "Incorrect email or password. Please try again.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMsg = "Password should be at least 6 characters long.";
+      }
+      setMessage("Error: " + errorMsg);
     }
     setLoading(false);
   };
@@ -78,25 +73,80 @@ export default function Login() {
   return (
     <div className="page-wrapper container" style={{ maxWidth: '400px', alignSelf: 'center', margin: 'auto' }}>
       <div className="glass-panel" style={{ padding: '30px' }}>
-        <h2>Login / Register</h2>
+        <h2>{isSignUp ? 'Create Account' : 'Log In'}</h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
-          We use passwordless authentication. Enter your email and we'll send you a login link.
+          {isSignUp ? 'Sign up to sell items and chat with other students.' : 'Log in to access your profile and chats.'}
         </p>
-        <form onSubmit={handleLogin}>
-          <input 
-            type="email" 
-            className="glass-input" 
-            placeholder="Enter your email" 
-            style={{ marginBottom: '15px' }}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Processing...' : 'Send Magic Link'}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {isSignUp && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Full Name</label>
+              <input 
+                type="text" 
+                className="glass-input" 
+                placeholder="E.g. John Doe" 
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Email Address</label>
+            <input 
+              type="email" 
+              className="glass-input" 
+              placeholder="E.g. student@university.edu" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>Password</label>
+            <input 
+              type="password" 
+              className="glass-input" 
+              placeholder="Min 6 characters" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+            {loading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Log In')}
           </button>
         </form>
+
         {message && <p style={{ marginTop: '15px', color: 'var(--secondary-color)', fontSize: '14px' }}>{message}</p>}
+
+        <div style={{ marginTop: '20px', borderTop: '1px solid var(--glass-border)', paddingTop: '15px', textAlign: 'center', fontSize: '14px' }}>
+          {isSignUp ? (
+            <p style={{ margin: 0 }}>
+              Already have an account?{' '}
+              <span 
+                style={{ color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 'bold' }} 
+                onClick={() => { setIsSignUp(false); setMessage(''); }}
+              >
+                Log In
+              </span>
+            </p>
+          ) : (
+            <p style={{ margin: 0 }}>
+              Don't have an account?{' '}
+              <span 
+                style={{ color: 'var(--primary-color)', cursor: 'pointer', fontWeight: 'bold' }} 
+                onClick={() => { setIsSignUp(true); setMessage(''); }}
+              >
+                Sign Up
+              </span>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
