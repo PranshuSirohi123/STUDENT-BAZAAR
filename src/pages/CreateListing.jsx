@@ -111,7 +111,7 @@ export default function CreateListing() {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Declared Selling Price ($)</label>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Declared Selling Price (₹)</label>
             <input 
               type="number" 
               className="glass-input" 

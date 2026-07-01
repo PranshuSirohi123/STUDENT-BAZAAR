@@ -127,7 +127,7 @@ export default function ListingDetail() {
             </span>
             <h1 style={{ marginTop: '15px', fontSize: '32px' }}>{listing.title}</h1>
             <p style={{ color: 'var(--secondary-color)', fontSize: '28px', fontWeight: 'bold' }}>
-              ${listing.price}
+              ₹{listing.price}
             </p>
           </div>
 

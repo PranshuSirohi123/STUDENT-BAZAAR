@@ -112,7 +112,7 @@ export default function Home() {
                 backgroundColor: 'rgba(255,255,255,0.05)'
               }}></div>
               <h3 style={{ fontSize: '18px', marginBottom: '5px' }}>{item.title}</h3>
-              <p style={{ color: 'var(--secondary-color)', fontWeight: 'bold', fontSize: '20px', marginBottom: '10px' }}>${item.price}</p>
+              <p style={{ color: 'var(--secondary-color)', fontWeight: 'bold', fontSize: '20px', marginBottom: '10px' }}>₹{item.price}</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '14px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
                 {item.description}
               </p>
